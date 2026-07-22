@@ -10,9 +10,19 @@ export default function CesiumPage() {
     const el = containerRef.current
     if (!el) return
 
+    // Use Esri World Imagery as the base layer. It needs no Cesium ion token and
+    // is CORS-enabled. (The OpenStreetMap tile server intermittently blocks
+    // Cesium's tile requests / returns non-image responses, which surfaced as
+    // "InvalidStateError: The source image could not be decoded" and stopped
+    // rendering.)
     const viewer = new Cesium.Viewer(el, {
-      // Start with no imagery so no Cesium ion token is required...
-      baseLayer: false,
+      baseLayer: new Cesium.ImageryLayer(
+        new Cesium.UrlTemplateImageryProvider({
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          maximumLevel: 19,
+          credit: 'Tiles © Esri, Maxar, Earthstar Geographics',
+        }),
+      ),
       baseLayerPicker: false,
       geocoder: false,
       timeline: false,
@@ -20,13 +30,6 @@ export default function CesiumPage() {
       sceneModePicker: true,
       navigationHelpButton: false,
     })
-
-    // ...then use free OpenStreetMap raster tiles as the base layer.
-    viewer.imageryLayers.addImageryProvider(
-      new Cesium.OpenStreetMapImageryProvider({
-        url: 'https://tile.openstreetmap.org/',
-      }),
-    )
 
     // Fly to Thailand
     viewer.camera.flyTo({

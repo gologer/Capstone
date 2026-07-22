@@ -42,6 +42,134 @@ function Table({ headers, rows }: TableProps) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Charts — dependency-free inline SVG/CSS, theme-aware.                */
+/* Categorical palette validated with the dataviz skill's validator     */
+/* (adjacent-pair CVD-safe in light & dark; direct labels satisfy the   */
+/* light-mode contrast relief rule).                                    */
+/* ------------------------------------------------------------------ */
+interface Slice {
+  label: string
+  value: number
+  varName: string // CSS var, e.g. 'viz-1'
+}
+
+function DonutChart({ data, unit = '%' }: { data: Slice[]; unit?: string }) {
+  const total = data.reduce((a, d) => a + d.value, 0)
+  const R = 60
+  const C = 2 * Math.PI * R
+  const gap = 3 // px surface gap between segments
+  let cursor = 0
+  const segs = data.map((d) => {
+    const len = (d.value / total) * C
+    const seg = { d, dash: Math.max(len - gap, 0), off: cursor }
+    cursor += len
+    return seg
+  })
+  return (
+    <div className="chart donut-chart">
+      <svg viewBox="0 0 160 160" role="img" aria-label="สัดส่วนงานพัฒนาแพลตฟอร์ม LULC">
+        <g transform="translate(80,80) rotate(-90)">
+          {segs.map((s, i) => (
+            <circle
+              key={i}
+              r={R}
+              cx="0"
+              cy="0"
+              fill="none"
+              stroke={`var(--${s.d.varName})`}
+              strokeWidth="22"
+              strokeDasharray={`${s.dash} ${C - s.dash}`}
+              strokeDashoffset={-s.off}
+            />
+          ))}
+        </g>
+        <text x="80" y="76" textAnchor="middle" className="donut-center-num">
+          {total}
+          {unit}
+        </text>
+        <text x="80" y="94" textAnchor="middle" className="donut-center-lbl">
+          รวม
+        </text>
+      </svg>
+      <ul className="chart-legend">
+        {data.map((d) => (
+          <li key={d.label}>
+            <span className="legend-swatch" style={{ background: `var(--${d.varName})` }} />
+            <span className="legend-label">{d.label}</span>
+            <span className="legend-val">
+              {d.value}
+              {unit}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function BarChart({
+  data,
+  unit = '',
+}: {
+  data: { label: string; value: number }[]
+  unit?: string
+}) {
+  const max = Math.max(...data.map((d) => d.value))
+  return (
+    <div className="chart bar-chart">
+      {data.map((d) => (
+        <div className="bar-row" key={d.label}>
+          <span className="bar-label">{d.label}</span>
+          <span className="bar-track">
+            <span className="bar-fill" style={{ width: `${(d.value / max) * 100}%` }} />
+          </span>
+          <span className="bar-val">
+            {d.value}
+            {unit}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+interface Phase {
+  title: string
+  detail: string
+  done: boolean
+}
+function PhaseTimeline({ phases }: { phases: Phase[] }) {
+  return (
+    <ol className="phase-timeline">
+      {phases.map((p) => (
+        <li key={p.title} className={p.done ? 'phase done' : 'phase future'}>
+          <span className="phase-dot" aria-hidden="true">
+            {p.done ? '✓' : '›'}
+          </span>
+          <div className="phase-body">
+            <strong>{p.title}</strong>
+            <span>{p.detail}</span>
+          </div>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+function StatTiles({ items }: { items: { value: string; label: string }[] }) {
+  return (
+    <div className="stat-tiles">
+      {items.map((s) => (
+        <div className="stat-tile" key={s.label}>
+          <span className="stat-value">{s.value}</span>
+          <span className="stat-label">{s.label}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
 /* Report page                                                         */
 /* ------------------------------------------------------------------ */
 
@@ -79,6 +207,95 @@ export default function ReportPage() {
         <p className="report-note">
           หมายเหตุ: URL/endpoint ของหน่วยงานอาจเปลี่ยนแปลงได้ ควรตรวจสอบสถานะล่าสุดก่อนนำไป production
         </p>
+
+        {/* ---- Development overview ---- */}
+        <section className="report-section">
+          <h2>
+            <span className="section-num section-num-mark">✦</span>
+            ภาพรวมการพัฒนา
+          </h2>
+          <p className="report-intro">
+            โครงการนี้เป็นหนึ่งในหัวข้อ Capstone (หัวข้อที่ 7 — Automated Land Use/Land Cover
+            Change Detection) จาก workshop <strong>GI Vibe Coding</strong> ปัจจุบันพัฒนาส่วน
+            Web Map App (frontend) เสร็จแล้ว และวางสถาปัตยกรรมต่อยอดสู่แพลตฟอร์มตรวจจับการ
+            เปลี่ยนแปลงการใช้ที่ดินด้วย AI ตามแหล่งข้อมูลที่รวบรวมด้านล่าง
+          </p>
+
+          <StatTiles
+            items={[
+              { value: '5', label: 'หน้าเว็บ' },
+              { value: '3', label: 'Web Map API' },
+              { value: '7,452', label: 'ตำบล (cascade)' },
+              { value: '35', label: 'แหล่งข้อมูล' },
+            ]}
+          />
+
+          <h3>ขั้นตอนการพัฒนา</h3>
+          <PhaseTimeline
+            phases={[
+              { title: 'ตั้งโครงโปรเจกต์', detail: 'Vite + React + TypeScript scaffold', done: true },
+              {
+                title: 'หน้าตัวอย่าง Web Map API',
+                detail: 'Leaflet · MapLibre GL · CesiumJS',
+                done: true,
+              },
+              {
+                title: 'เลือกพื้นที่แบบ cascade',
+                detail: 'จังหวัด → อำเภอ → ตำบล + zoom (7,452 ตำบล) และ tile layer switcher',
+                done: true,
+              },
+              { title: 'หน้ารายงานสรุป Capstone', detail: 'ภาพรวม + charts + แหล่งข้อมูล', done: true },
+              {
+                title: 'Deploy',
+                detail: 'GitHub Pages (SPA) + FastAPI backend serve build',
+                done: true,
+              },
+              {
+                title: 'โมเดล DL + Change Detection',
+                detail: 'เทรน U-Net/DeepLabv3+ บน GEE แล้วตรวจจับการเปลี่ยนแปลงจริง (ถัดไป)',
+                done: false,
+              },
+            ]}
+          />
+
+          <div className="chart-grid">
+            <figure className="chart-card">
+              <figcaption>แหล่งข้อมูลตามกลุ่ม (จำนวนชุด/บริการ)</figcaption>
+              <BarChart
+                data={[
+                  { label: 'Google Earth Engine', value: 18 },
+                  { label: 'หน่วยงานไทย', value: 4 },
+                  { label: 'Web Services', value: 6 },
+                  { label: 'Static Data', value: 7 },
+                ]}
+              />
+            </figure>
+            <figure className="chart-card">
+              <figcaption>สัดส่วนงานพัฒนาแพลตฟอร์ม LULC (ประมาณการ)</figcaption>
+              <DonutChart
+                data={[
+                  { label: 'เตรียมข้อมูล', value: 25, varName: 'viz-1' },
+                  { label: 'เทรนโมเดล DL', value: 35, varName: 'viz-2' },
+                  { label: 'ตรวจจับการเปลี่ยนแปลง', value: 15, varName: 'viz-3' },
+                  { label: 'เชื่อมเข้าเว็บ', value: 15, varName: 'viz-4' },
+                  { label: 'ทดสอบ / validate', value: 10, varName: 'viz-5' },
+                ]}
+              />
+            </figure>
+          </div>
+
+          <h3>เทคโนโลยีที่ใช้</h3>
+          <div className="report-tags">
+            <span>React 19</span>
+            <span>TypeScript</span>
+            <span>Vite</span>
+            <span>React Router</span>
+            <span>Leaflet</span>
+            <span>MapLibre GL</span>
+            <span>CesiumJS</span>
+            <span>FastAPI</span>
+          </div>
+        </section>
 
         {/* ---- 1. GEE ---- */}
         <section className="report-section">

@@ -66,6 +66,7 @@ export default function LeafletPage() {
   const polyRef = useRef<Record<string, L.Polygon>>({}) // province polygons keyed by code
   const highlightRef = useRef<string>('') // currently highlighted province code
   const markerRef = useRef<L.CircleMarker | null>(null)
+  const layersCtrlRef = useRef<L.Control.Layers | null>(null)
 
   const [admin, setAdmin] = useState<AdminData | null>(null)
   const [selProv, setSelProv] = useState('') // province id (string)
@@ -248,10 +249,57 @@ export default function LeafletPage() {
 
     const map = L.map(el).setView(CENTER, 6)
     mapRef.current = map
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+    // Recent date for NASA GIBS daily imagery (near-real-time lags a day or two).
+    const gibsDate = new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10)
+
+    // Selectable tile layers — basemaps + satellite/land-monitoring services
+    // relevant to the LULC change-detection topic (all keyless & verified).
+    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap contributors',
-    }).addTo(map)
+    })
+    const esriImagery = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { maxNativeZoom: 19, maxZoom: 19, attribution: 'Tiles © Esri, Maxar, Earthstar Geographics' },
+    )
+    const esriTopo = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+      { maxNativeZoom: 19, maxZoom: 19, attribution: 'Tiles © Esri' },
+    )
+    const openTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      maxNativeZoom: 17,
+      maxZoom: 19,
+      attribution: '© OpenTopoMap (CC-BY-SA)',
+    })
+    const cartoLight = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      { maxZoom: 19, subdomains: 'abcd', attribution: '© OpenStreetMap © CARTO' },
+    )
+    const gibsModis = L.tileLayer(
+      `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${gibsDate}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
+      { maxNativeZoom: 9, maxZoom: 19, attribution: 'Imagery © NASA EOSDIS GIBS · MODIS Terra' },
+    )
+    const gibsViirs = L.tileLayer(
+      `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/${gibsDate}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
+      { maxNativeZoom: 9, maxZoom: 19, attribution: 'Imagery © NASA EOSDIS GIBS · VIIRS SNPP' },
+    )
+
+    osm.addTo(map) // default basemap
+
+    const baseLayers: Record<string, L.Layer> = {
+      OpenStreetMap: osm,
+      'ภาพถ่ายดาวเทียม — Esri World Imagery': esriImagery,
+      'ภูมิประเทศ — Esri Topographic': esriTopo,
+      'ภูมิประเทศ/เส้นชั้นความสูง — OpenTopoMap': openTopo,
+      'แผนที่โทนสว่าง — CARTO': cartoLight,
+      'ดาวเทียมรายวัน — NASA GIBS (MODIS)': gibsModis,
+      'ดาวเทียมรายวัน — NASA GIBS (VIIRS)': gibsViirs,
+    }
+    // Layer switcher button, top-right of the map.
+    layersCtrlRef.current = L.control
+      .layers(baseLayers, undefined, { position: 'topright', collapsed: true })
+      .addTo(map)
 
     const controller = new AbortController()
 
@@ -268,6 +316,7 @@ export default function LeafletPage() {
           },
         }).addTo(map)
         map.fitBounds(layer.getBounds())
+        layersCtrlRef.current?.addOverlay(layer, 'ขอบเขตจังหวัด')
       })
       .catch((e: Error) => {
         if (e.name !== 'AbortError') console.error('provinces load failed', e)
@@ -287,6 +336,7 @@ export default function LeafletPage() {
       polyRef.current = {}
       highlightRef.current = ''
       markerRef.current = null
+      layersCtrlRef.current = null
     }
   }, [])
 
