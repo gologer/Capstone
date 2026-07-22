@@ -17,5 +17,7 @@ const cesium = cesiumFactory.default ?? cesiumFactory
 // server). For the GitHub Pages project site build with: vite build --base=/WebMapApp/
 export default defineConfig({
   base: '/',
-  plugins: [react(), cesium()],
+  // Serve Cesium's runtime from `cesium-lib/` (not the default `cesium/`) so it
+  // does not collide with the client-side `/cesium` route on static hosts.
+  plugins: [react(), cesium({ cesiumBaseUrl: 'cesium-lib/' })],
 })
