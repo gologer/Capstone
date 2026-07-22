@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:backend": "tsc -b && vite build --outDir ../backend/static --emptyOutDir",
-    "build:pages": "tsc -b && vite build --base=/Capstone/",
+    "build:pages": "tsc -b && vite build --base=/Capstone/ && node scripts/fix-pages-cesium.mjs Capstone",
     "lint": "oxlint",
     "preview": "vite preview"
   },
