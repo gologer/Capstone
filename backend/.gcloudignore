@@ -1,0 +1,35 @@
+# .gcloudignore — controls what `gcloud` uploads as the Cloud Build source.
+# NOTE: when this file exists, gcloud uses it INSTEAD of .gitignore. That is
+# intentional here: static/ IS git-ignored but MUST be uploaded (it is the web
+# root served by the app), so we do not list it below.
+
+# ---- Python runtime / caches ----
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Secrets (must never be uploaded) ----
+.env
+.env.*
+*-service-account*.json
+service-account.json
+credentials.json
+*.pem
+*.key
+
+# ---- VCS / editor / OS ----
+.git/
+.gitignore
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# static/ is deliberately NOT ignored — it is the built frontend web root.

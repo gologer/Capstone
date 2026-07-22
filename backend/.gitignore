@@ -17,6 +17,9 @@ dist/
 .eggs/
 wheels/
 
+# ---- Built frontend copied here by `npm run build:backend` (regenerated) ----
+static/
+
 # ---- Test / coverage / caches ----
 .pytest_cache/
 .mypy_cache/
