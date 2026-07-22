@@ -1,0 +1,7 @@
+
+
+ติดตั้ง Leftlet, MapLibre, CesiumJS ใน front end แล้ว ทำให้หน้า index.html สามารถเข้าถึงหน้าตัวอย่างของแต่ละ web map api ได้
+
+แก้ไขหน้า Leftlet โดย สร้าง drop down จังหวัด เพื่อ zoom ไปยังจังหวัดที่ต้องการ โดยใช้ข้อมูลจาก Example และเลือก key ที่เหมาะสมในการทำงาน
+
+vite build เป็น dist พร้อมนำไปใช้

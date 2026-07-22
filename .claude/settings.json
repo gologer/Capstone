@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(git push *)",
+      "Bash(git credential *)",
+      "Bash(curl -s -o /tmp/live.html -w \"HTTP %{http_code}\\\\n\" https://gologer.github.io/WebMapApp/)",
+      "Read(//tmp/**)"
+    ]
+  }
+}
